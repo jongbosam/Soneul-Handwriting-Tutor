@@ -42,7 +42,7 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({ level }) => {
       className="fixed top-0 left-0 pointer-events-none z-[9999] text-3xl select-none transition-opacity duration-300 hidden md:block"
       style={{ 
         // Offsets to place the bottom-right of the icon at the cursor coordinates
-        marginTop: '-28px', 
+        marginTop: '-30px', 
         marginLeft: '-24px',
         willChange: 'transform',
         filter: 'drop-shadow(2px 2px 1px rgba(0,0,0,0.2))'

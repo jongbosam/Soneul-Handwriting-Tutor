@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>손을 (Soneul)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#FFB347', // Pastel Orange
+              secondary: '#FFD1DC', // Pastel Pink
+              accent: '#77DD77', // Pastel Green
+              paper: '#FFFDF5', // Warm paper color
+              ink: '#2C2C2C',
+            },
+            fontFamily: {
+              sans: ['"Jua"', '"Gaegu"', 'sans-serif'],
+            },
+            animation: {
+              'bounce-slow': 'bounce 3s infinite',
+            }
+          }
+        }
+      }
+    </script>
+    <!-- Importing Google Fonts for a handwritten/playful feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Jua&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Jua', sans-serif;
+        background-color: #FFF9E6;
+        overscroll-behavior: none;
+      }
+      .font-hand {
+        font-family: 'Gaegu', cursive;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "@google/genai": "https://esm.sh/@google/genai@0.1.2"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

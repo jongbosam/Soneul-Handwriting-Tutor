@@ -12,7 +12,10 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({ level }) => {
   useEffect(() => {
     const updatePosition = (e: MouseEvent) => {
       if (cursorRef.current) {
-        cursorRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+        // We use two translates: 
+        // 1. Move the div to the mouse position.
+        // 2. Shift the div so its bottom-right corner (-100%, -100%) is at that position.
+        cursorRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-100%, -100%)`;
       }
       if (!isVisible) setIsVisible(true);
     };
@@ -39,16 +42,15 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({ level }) => {
   return (
     <div
       ref={cursorRef}
-      className="fixed top-0 left-0 pointer-events-none z-[9999] text-3xl select-none transition-opacity duration-300 hidden md:block"
+      className="fixed top-0 left-0 pointer-events-none z-[9999] text-4xl select-none transition-opacity duration-300 hidden md:block"
       style={{ 
-        // Offsets to place the bottom-right of the icon at the cursor coordinates
-        marginTop: '-30px', 
-        marginLeft: '-24px',
         willChange: 'transform',
-        filter: 'drop-shadow(2px 2px 1px rgba(0,0,0,0.2))'
+        filter: 'drop-shadow(2px 2px 1px rgba(0,0,0,0.15))'
       }}
     >
-      {levelData.icon}
+      <div className={levelData.visualClass} style={{ filter: levelData.filterStyle }}>
+        {levelData.icon}
+      </div>
     </div>
   );
 };

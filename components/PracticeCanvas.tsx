@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState } from 'react';
 import { ToolType } from '../types';
 import { Button } from './Button';
@@ -21,10 +22,10 @@ export const PracticeCanvas: React.FC<PracticeCanvasProps> = ({
   const [activeTool, setActiveTool] = useState<ToolType>(ToolType.PEN);
   const [isDrawing, setIsDrawing] = useState(false);
   
-  // Keep track of tool in ref for resize handler to access without dependency
+  // Keep track of tool state for the effect closure
   const activeToolRef = useRef(activeTool);
 
-  // Update tool settings in context and ref whenever activeTool changes
+  // Update ref when state changes
   useEffect(() => {
     activeToolRef.current = activeTool;
     const canvas = canvasRef.current;
@@ -32,17 +33,20 @@ export const PracticeCanvas: React.FC<PracticeCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
     if (activeTool === ToolType.PEN) {
       ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = '#000000';
+      ctx.strokeStyle = '#2C2C2C'; // Ink color
       ctx.lineWidth = 8;
     } else {
       ctx.globalCompositeOperation = 'destination-out';
-      ctx.lineWidth = 30;
+      ctx.lineWidth = 40; // Eraser size
     }
   }, [activeTool]);
 
-  // Handle Resize and Initialization
+  // Handle Resize and High DPI
   useEffect(() => {
     const handleResize = () => {
       if (containerRef.current && canvasRef.current) {
@@ -50,213 +54,221 @@ export const PracticeCanvas: React.FC<PracticeCanvasProps> = ({
         
         if (width === 0 || height === 0) return;
 
-        // Check if resize is actually needed to avoid clearing canvas unnecessarily
-        if (canvasRef.current.width === width && canvasRef.current.height === height) return;
-
-        // Save current content
+        // Save current content to avoid clearing on resize
         const tempCanvas = document.createElement('canvas');
         const tempCtx = tempCanvas.getContext('2d');
         tempCanvas.width = canvasRef.current.width;
         tempCanvas.height = canvasRef.current.height;
         tempCtx?.drawImage(canvasRef.current, 0, 0);
 
-        // Resize (this clears the canvas)
+        // Resize
         canvasRef.current.width = width;
         canvasRef.current.height = height;
 
-        // Restore content
         const ctx = canvasRef.current.getContext('2d');
         if (ctx) {
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            
-            // Draw back the content stretched to fit new size
-            ctx.drawImage(tempCanvas, 0, 0, width, height);
-            
-            // Re-apply current tool settings after context reset
-            if (activeToolRef.current === ToolType.PEN) {
-              ctx.globalCompositeOperation = 'source-over';
-              ctx.strokeStyle = '#000000';
-              ctx.lineWidth = 8;
-            } else {
-              ctx.globalCompositeOperation = 'destination-out';
-              ctx.lineWidth = 30;
-            }
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          
+          // Restore content (stretched to fit new size)
+          ctx.drawImage(tempCanvas, 0, 0, width, height);
+          
+          // Re-apply tool settings
+          if (activeToolRef.current === ToolType.PEN) {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = '#2C2C2C';
+            ctx.lineWidth = 8;
+          } else {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.lineWidth = 40;
+          }
         }
       }
     };
 
     window.addEventListener('resize', handleResize);
+    // Initial size setup
+    handleResize();
     
-    // Initial resize: Use setTimeout to ensure DOM is fully laid out and dimensions are correct
-    const timer = setTimeout(handleResize, 50);
+    // Additional check for mobile address bar shifts
+    const timer = setTimeout(handleResize, 100);
 
     return () => {
-        window.removeEventListener('resize', handleResize);
-        clearTimeout(timer);
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timer);
     };
-  }, []); // Run only once on mount
+  }, []);
 
-  const startDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (isSubmitting) return;
+  // Drawing Logic
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
-    // Capture pointer to track movement outside canvas bounds if needed
-    canvas.setPointerCapture(e.pointerId);
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    setIsDrawing(true);
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const getPos = (e: MouseEvent | TouchEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      let clientX, clientY;
+      
+      if ('touches' in e) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        clientX = (e as MouseEvent).clientX;
+        clientY = (e as MouseEvent).clientY;
+      }
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    };
 
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    
-    // Ensure settings are correct before drawing (Redundant safety check)
-    if (activeTool === ToolType.PEN) {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 8;
-    } else {
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.lineWidth = 30;
-    }
-  };
+    const startDrawing = (e: MouseEvent | TouchEvent) => {
+      // Only prevent default if it's touch to prevent scrolling while drawing
+      if ('touches' in e) e.preventDefault(); 
+      setIsDrawing(true);
+      const pos = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+    };
 
-  const draw = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || isSubmitting) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const draw = (e: MouseEvent | TouchEvent) => {
+      if (!isDrawing) return;
+      if ('touches' in e) e.preventDefault();
+      const pos = getPos(e);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    };
 
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const stopDrawing = () => {
+      if (isDrawing) {
+        ctx.closePath();
+        setIsDrawing(false);
+      }
+    };
 
-    ctx.lineTo(x, y);
-    ctx.stroke();
-  };
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
 
-  const stopDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    setIsDrawing(false);
-    const canvas = canvasRef.current;
-    if (canvas) {
-      canvas.releasePointerCapture(e.pointerId);
-    }
-  };
+    canvas.addEventListener('touchstart', startDrawing, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', stopDrawing);
+
+    return () => {
+      canvas.removeEventListener('mousedown', startDrawing);
+      canvas.removeEventListener('mousemove', draw);
+      canvas.removeEventListener('mouseup', stopDrawing);
+      canvas.removeEventListener('mouseout', stopDrawing);
+
+      canvas.removeEventListener('touchstart', startDrawing);
+      canvas.removeEventListener('touchmove', draw);
+      canvas.removeEventListener('touchend', stopDrawing);
+    };
+  }, [isDrawing]);
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  };
+
+  const isCanvasBlank = (canvas: HTMLCanvasElement): boolean => {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return true;
+
+    const pixelBuffer = new Uint32Array(
+      ctx.getImageData(0, 0, canvas.width, canvas.height).data.buffer
+    );
+
+    // Check if there are any non-transparent pixels.
+    // The canvas is transparent by default, and we draw with opacity 1.
+    // So any pixel with alpha > 0 means something was drawn.
+    return !pixelBuffer.some(color => color !== 0);
   };
 
   const handleSubmit = () => {
-    if(canvasRef.current) {
-        onSubmit(canvasRef.current);
+    if (canvasRef.current) {
+      if (isCanvasBlank(canvasRef.current)) {
+        alert("글씨를 먼저 써주세요!");
+        return;
+      }
+      onSubmit(canvasRef.current);
     }
-  }
+  };
 
   return (
-    <div className="flex flex-col h-screen bg-neutral-100">
-      {/* Top Bar */}
-      <div className="bg-white p-4 shadow-sm flex items-center justify-between z-10">
-        <Button variant="ghost" size="sm" onClick={onBack} disabled={isSubmitting}>
-          <ArrowLeft className="mr-2" /> 뒤로가기
+    <div className="fixed inset-0 bg-slate-50 flex flex-col h-[100dvh]">
+      {/* Compact Header for Landscape */}
+      <header className="flex-none bg-white px-4 py-2 flex items-center justify-between shadow-sm z-20 border-b border-gray-100">
+        <Button variant="ghost" size="sm" onClick={onBack} icon={<ArrowLeft size={20} />}>
+          그만하기
         </Button>
-        <h2 className="text-xl font-bold text-gray-700">글씨 연습 시간</h2>
-        <div className="w-20"></div> {/* Spacer */}
-      </div>
+        <h2 className="text-xl font-bold text-gray-700 flex items-center gap-2">
+           <span className="text-sm text-gray-400 font-normal hidden sm:inline">따라 쓰기</span>
+           <span className="text-primary text-2xl font-hand">{word}</span>
+        </h2>
+        <div className="w-[88px]"></div> {/* Spacer */}
+      </header>
 
-      {/* Canvas Area */}
-      <div className="flex-grow relative p-4 flex flex-col items-center justify-center overflow-hidden">
-        <div 
-            ref={containerRef}
-            className="relative w-full max-w-5xl aspect-[4/3] bg-white rounded-3xl shadow-2xl overflow-hidden"
-        >
-            {/* Guide Layer (Background) */}
-            <div className="absolute inset-0 flex items-center justify-center select-none pointer-events-none">
-                
-                {/* Guide Container */}
-                <div className="relative w-[70%] h-[60%] flex items-center justify-center">
-                  
-                  {/* Guide Word */}
-                  <span className="text-[200px] font-bold text-gray-200 font-hand tracking-widest opacity-60 z-0">
-                      {word}
-                  </span>
+      {/* Flexible Canvas Area */}
+      <div className="flex-1 relative w-full min-h-0 p-2 sm:p-4 flex items-center justify-center overflow-hidden">
+        <div ref={containerRef} className="w-full h-full max-w-4xl relative bg-white rounded-3xl shadow-lg border-4 border-dashed border-orange-100 flex items-center justify-center overflow-hidden">
+             
+             {/* Guide Text Background */}
+             <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-20">
+                <span className="text-[120px] sm:text-[200px] md:text-[250px] font-hand text-gray-400 font-bold leading-none">
+                  {word}
+                </span>
+             </div>
 
-                  {/* Horizontal Guide Lines */}
-                  <div className="absolute inset-0 w-full h-full flex flex-col justify-center items-center opacity-40 z-10">
-                      {/* Pink Top Line */}
-                      <div className="w-full border-b-2 border-dashed border-pink-300 mb-[100px]"></div>
-                      {/* Blue Bottom Line */}
-                      <div className="w-full border-b-2 border-dashed border-blue-300 mt-[100px]"></div>
-                  </div>
-                </div>
-
-            </div>
-
-            {/* Drawing Layer - Using Pointer Events for Mouse/Touch/Pen support */}
-            <canvas
+             {/* The Canvas - Takes full size of the container */}
+             <canvas 
                 ref={canvasRef}
-                className="absolute inset-0 w-full h-full cursor-crosshair touch-none z-20"
-                onPointerDown={startDrawing}
-                onPointerMove={draw}
-                onPointerUp={stopDrawing}
-                onPointerLeave={stopDrawing}
-            />
+                className="block touch-none cursor-crosshair w-full h-full rounded-2xl"
+             />
         </div>
       </div>
 
       {/* Toolbar */}
-      <div className="bg-white p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex justify-center items-center gap-4 safe-pb">
-        <div className="bg-gray-100 p-2 rounded-2xl flex gap-2">
-            <Button 
-                variant={activeTool === ToolType.PEN ? 'primary' : 'ghost'} 
-                onClick={() => setActiveTool(ToolType.PEN)}
-                disabled={isSubmitting}
-                className={activeTool === ToolType.PEN ? 'scale-110' : ''}
-                title="연필"
-            >
-                <Pen size={24} />
-            </Button>
-            <Button 
-                variant={activeTool === ToolType.ERASER ? 'secondary' : 'ghost'} 
-                onClick={() => setActiveTool(ToolType.ERASER)}
-                disabled={isSubmitting}
-                className={activeTool === ToolType.ERASER ? 'scale-110' : ''}
-                title="지우개"
-            >
-                <Eraser size={24} />
-            </Button>
+      <footer className="flex-none bg-white px-4 py-2 sm:py-3 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] z-20 flex items-center justify-between safe-area-pb">
+        <div className="flex items-center gap-2 bg-gray-100 p-1.5 rounded-2xl">
+          <button 
+            onClick={() => setActiveTool(ToolType.PEN)}
+            className={`p-2 sm:p-3 rounded-xl transition-all ${activeTool === ToolType.PEN ? 'bg-white shadow text-primary' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            <Pen size={20} className="sm:w-6 sm:h-6" fill={activeTool === ToolType.PEN ? "currentColor" : "none"} />
+          </button>
+          <button 
+            onClick={() => setActiveTool(ToolType.ERASER)}
+            className={`p-2 sm:p-3 rounded-xl transition-all ${activeTool === ToolType.ERASER ? 'bg-white shadow text-primary' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            <Eraser size={20} className="sm:w-6 sm:h-6" />
+          </button>
+          <div className="w-px h-6 bg-gray-300 mx-1"></div>
+          <button 
+            onClick={clearCanvas}
+            className="p-2 sm:p-3 rounded-xl text-red-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+          >
+            <Trash2 size={20} className="sm:w-6 sm:h-6" />
+          </button>
         </div>
 
-        <div className="h-10 w-px bg-gray-300 mx-2"></div>
-
-        <Button variant="danger" onClick={clearCanvas} disabled={isSubmitting} title="모두 지우기">
-            <Trash2 size={24} />
-        </Button>
-
-        <div className="flex-grow"></div>
-
         <Button 
-            variant="primary" 
-            size="lg" 
-            className="bg-green-500 border-green-600 hover:bg-green-400 min-w-[200px]"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
+          variant="primary" 
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className="w-auto px-6 py-2 sm:px-8 sm:py-3 text-base sm:text-lg rounded-xl"
+          icon={isSubmitting ? <span className="animate-spin">⏳</span> : <CheckCircle size={20} />}
         >
-            {isSubmitting ? '채점 중...' : <><CheckCircle className="mr-2"/> 다 썼어요!</>}
+          {isSubmitting ? '채점 중...' : '다 썼어요!'}
         </Button>
-      </div>
+      </footer>
     </div>
   );
 };

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { LEVELS } from '../constants';
 
@@ -15,7 +16,9 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({ level }) => {
         // We use two translates: 
         // 1. Move the div to the mouse position.
         // 2. Shift the div so its bottom-right corner (-100%, -100%) is at that position.
-        cursorRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-100%, -100%)`;
+        // 3. Add a small offset (6px, 6px) to align the visual "tip" (which is often recessed due to padding) 
+        //    precisely with the mouse pointer.
+        cursorRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-100%, -100%) translate(6px, 6px)`;
       }
       if (!isVisible) setIsVisible(true);
     };

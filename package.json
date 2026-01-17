@@ -1,5 +1,5 @@
 {
-  "name": "손을(soneul)0.2",
+  "name": "손을(soneul)0.3",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,7 +12,8 @@
     "lucide-react": "^0.562.0",
     "react-dom": "^19.2.3",
     "react": "^19.2.3",
-    "@google/genai": "latest"
+    "@google/genai": "latest",
+    "firebase": "^12.8.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

@@ -4,17 +4,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>손을 (Soneul)</title>
+    <title>손을 (Soneul) - 관리자 모드</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
             colors: {
-              primary: '#FFB347', // Pastel Orange
-              secondary: '#FFD1DC', // Pastel Pink
-              accent: '#77DD77', // Pastel Green
-              paper: '#FFFDF5', // Warm paper color
+              primary: '#FFB347', 
+              secondary: '#FFD1DC', 
+              accent: '#77DD77', 
+              paper: '#FFFDF5', 
               ink: '#2C2C2C',
             },
             fontFamily: {
@@ -22,12 +22,18 @@
             },
             animation: {
               'bounce-slow': 'bounce 3s infinite',
+              'shimmer': 'shimmer 2s infinite linear',
+            },
+            keyframes: {
+              shimmer: {
+                '0%': { transform: 'translateX(-100%)' },
+                '100%': { transform: 'translateX(100%)' }
+              }
             }
           }
         }
       }
     </script>
-    <!-- Importing Google Fonts for a handwritten/playful feel -->
     <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Jua&display=swap" rel="stylesheet">
     <style>
       body {
@@ -38,6 +44,9 @@
       .font-hand {
         font-family: 'Gaegu', cursive;
       }
+      .safe-area-pb {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
     </style>
   <script type="importmap">
 {
@@ -46,7 +55,10 @@
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
-    "@google/genai": "https://esm.sh/@google/genai"
+    "@google/genai": "https://esm.sh/@google/genai",
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
+    "firebase/": "https://esm.sh/firebase@^12.8.0/"
   }
 }
 </script>

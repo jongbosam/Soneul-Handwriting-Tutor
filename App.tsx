@@ -1,14 +1,16 @@
 
-import React, { useState } from 'react';
-import { AppScreen, UserState, FeedbackResult } from './types';
+import React, { useState, useEffect } from 'react';
+import { AppScreen, UserState, FeedbackResult, PracticeRecord, UserRole } from './types';
 import { LEVELS, PRACTICE_WORDS, LevelData } from './constants';
 import { LoginScreen } from './components/LoginScreen';
 import { Dashboard } from './components/Dashboard';
+import { AdminDashboard } from './components/AdminDashboard';
 import { PracticeCanvas } from './components/PracticeCanvas';
 import { ResultModal } from './components/ResultModal';
 import { LevelUpModal } from './components/LevelUpModal';
 import { CustomCursor } from './components/CustomCursor';
 import { analyzeHandwriting } from './services/mockAiService';
+import { saveUserData, loadUserData } from './services/firebaseService';
 
 const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>(AppScreen.LOGIN);
@@ -17,11 +19,55 @@ const App: React.FC = () => {
   const [user, setUser] = useState<UserState>({
     id: '',
     name: '학생',
+    role: UserRole.STUDENT,
     level: 1,
     levelName: LEVELS[0].name,
     xp: 0,
-    maxXp: LEVELS[0].maxXp
+    maxXp: LEVELS[0].maxXp,
+    history: []
   });
+
+  // Load basic session from localStorage just for ID persistence
+  useEffect(() => {
+    const savedId = localStorage.getItem('soneul_last_id');
+    if (savedId) {
+      handleLogin(savedId);
+    }
+  }, []);
+
+  const handleLogin = async (schoolId: string) => {
+    const isAdmin = schoolId.toLowerCase().startsWith('admin');
+    localStorage.setItem('soneul_last_id', schoolId);
+
+    if (isAdmin) {
+      setUser(prev => ({ ...prev, id: schoolId, role: UserRole.TEACHER, name: '선생님' }));
+      setCurrentScreen(AppScreen.ADMIN_DASHBOARD);
+      return;
+    }
+
+    // Try to load student data from Firestore
+    const firebaseData = await loadUserData(schoolId);
+    if (firebaseData) {
+      setUser(firebaseData);
+    } else {
+      setUser({
+        id: schoolId,
+        name: `친구 ${schoolId.split('.').pop()}`,
+        role: UserRole.STUDENT,
+        level: 1,
+        levelName: LEVELS[0].name,
+        xp: 0,
+        maxXp: LEVELS[0].maxXp,
+        history: []
+      });
+    }
+    setCurrentScreen(AppScreen.DASHBOARD);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('soneul_last_id');
+    setCurrentScreen(AppScreen.LOGIN);
+  };
 
   // State for practice session
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
@@ -30,11 +76,6 @@ const App: React.FC = () => {
   
   // State for Level Up Event
   const [levelUpData, setLevelUpData] = useState<LevelData | null>(null);
-
-  const handleLogin = (schoolId: string) => {
-    setUser(prev => ({ ...prev, id: schoolId, name: `친구 ${schoolId.split('.').pop()}` }));
-    setCurrentScreen(AppScreen.DASHBOARD);
-  };
 
   const handleStartPractice = () => {
     setCurrentWordIndex(Math.floor(Math.random() * PRACTICE_WORDS.length));
@@ -48,48 +89,57 @@ const App: React.FC = () => {
     setIsAnalyzing(false);
   };
 
-  const handleCloseResult = () => {
+  const handleCloseResult = async () => {
     if (feedback) {
-      setUser(prev => {
-        let newXp = prev.xp + feedback.earnedXp;
-        let newLevel = prev.level;
-        let newLevelName = prev.levelName;
-        let newMaxXp = prev.maxXp;
-        let leveledUp = false;
-
-        // Check for Level Up
-        if (newXp >= prev.maxXp) {
-          // Find next level
-          const nextLevelIdx = LEVELS.findIndex(l => l.level === prev.level + 1);
+      const updatedUser = await new Promise<UserState>((resolve) => {
+        setUser(prev => {
+          let newXp = prev.xp + feedback.earnedXp;
+          let newLevel = prev.level;
+          let newLevelName = prev.levelName;
+          let newMaxXp = prev.maxXp;
           
-          if (nextLevelIdx !== -1) {
-            const nextLevelData = LEVELS[nextLevelIdx];
-            newLevel = nextLevelData.level;
-            newLevelName = nextLevelData.name;
-            newXp = newXp - prev.maxXp; // Rollover XP
-            newMaxXp = nextLevelData.maxXp;
-            leveledUp = true;
-            
-            // Trigger Modal
-            setLevelUpData(nextLevelData);
-          } else {
-             // Max level reached, just cap XP
-             newXp = prev.maxXp;
-          }
-        }
+          const newRecord: PracticeRecord = {
+            id: Date.now().toString(),
+            word: PRACTICE_WORDS[currentWordIndex].text,
+            score: feedback.score,
+            date: new Date().toISOString(),
+            xpEarned: feedback.earnedXp
+          };
 
-        return {
-          ...prev,
-          level: newLevel,
-          levelName: newLevelName,
-          xp: newXp,
-          maxXp: newMaxXp
-        };
+          const newHistory = [newRecord, ...prev.history].slice(0, 50);
+
+          if (newXp >= prev.maxXp) {
+            const nextLevelIdx = LEVELS.findIndex(l => l.level === prev.level + 1);
+            if (nextLevelIdx !== -1) {
+              const nextLevelData = LEVELS[nextLevelIdx];
+              newLevel = nextLevelData.level;
+              newLevelName = nextLevelData.name;
+              newXp = newXp - prev.maxXp; 
+              newMaxXp = nextLevelData.maxXp;
+              setLevelUpData(nextLevelData);
+            } else {
+               newXp = prev.maxXp;
+            }
+          }
+
+          const newState = {
+            ...prev,
+            level: newLevel,
+            levelName: newLevelName,
+            xp: newXp,
+            maxXp: newMaxXp,
+            history: newHistory
+          };
+          resolve(newState);
+          return newState;
+        });
       });
+
+      // Save updated state to Firestore asynchronously
+      saveUserData(updatedUser);
     }
     
     setFeedback(null);
-    // Don't change screen yet if level up happened, wait for LevelUpModal to close
     if (!levelUpData) {
         setCurrentScreen(AppScreen.DASHBOARD);
     }
@@ -102,7 +152,7 @@ const App: React.FC = () => {
 
   return (
     <div className="font-sans text-gray-900 antialiased selection:bg-primary selection:text-white">
-      <CustomCursor level={user.level} />
+      {user.role === UserRole.STUDENT && <CustomCursor level={user.level} />}
       
       {currentScreen === AppScreen.LOGIN && (
         <LoginScreen onLogin={handleLogin} />
@@ -112,8 +162,12 @@ const App: React.FC = () => {
         <Dashboard 
           user={user} 
           onStartPractice={handleStartPractice}
-          onLogout={() => setCurrentScreen(AppScreen.LOGIN)}
+          onLogout={handleLogout}
         />
+      )}
+
+      {currentScreen === AppScreen.ADMIN_DASHBOARD && (
+        <AdminDashboard onLogout={handleLogout} />
       )}
 
       {currentScreen === AppScreen.PRACTICE && (
@@ -125,12 +179,10 @@ const App: React.FC = () => {
         />
       )}
 
-      {/* Show Result Modal first */}
       {feedback && (
         <ResultModal result={feedback} onClose={handleCloseResult} />
       )}
 
-      {/* Show Level Up Modal on top if active */}
       {levelUpData && !feedback && (
         <LevelUpModal levelData={levelUpData} onClose={handleCloseLevelUp} />
       )}

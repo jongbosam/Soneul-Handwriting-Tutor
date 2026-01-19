@@ -202,7 +202,11 @@ export const PracticeCanvas: React.FC<PracticeCanvasProps> = ({
       </header>
 
       <div className="flex-1 relative w-full min-h-0 p-4 sm:p-8 flex items-center justify-center overflow-hidden">
-        <div ref={containerRef} className="w-full h-full max-w-5xl relative bg-white rounded-[48px] shadow-2xl border-[16px] border-white ring-1 ring-gray-100 flex items-center justify-center overflow-hidden">
+        <div 
+          ref={containerRef} 
+          className="w-full h-full max-w-5xl relative bg-white rounded-[48px] shadow-2xl border-[16px] border-white ring-1 ring-gray-100 flex items-center justify-center overflow-hidden cursor-none"
+          style={{ cursor: 'none' }} // Explicit inline style to ensure crosshair is removed
+        >
              
              {/* K-PANOSE Professional Grid */}
              {showGrid && (
@@ -231,7 +235,8 @@ export const PracticeCanvas: React.FC<PracticeCanvasProps> = ({
 
              <canvas 
                 ref={canvasRef}
-                className="block touch-none cursor-crosshair w-full h-full rounded-[32px] z-10"
+                className="block touch-none cursor-none w-full h-full rounded-[32px] z-10"
+                style={{ cursor: 'none' }}
              />
              
              {/* Dynamic corners */}

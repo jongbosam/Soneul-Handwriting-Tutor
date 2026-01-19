@@ -15,14 +15,14 @@ export const LEVELS: LevelData[] = [
     name: '몽당 연필', 
     maxXp: 50, 
     icon: '✏️', 
-    visualClass: 'scale-[0.6] origin-bottom-right rotate-12' 
+    visualClass: 'scale-[0.6] origin-bottom-left rotate-12' 
   },
   { 
     level: 2, 
     name: '헌 연필', 
     maxXp: 80, 
     icon: '✏️', 
-    visualClass: 'scale-[0.8] origin-bottom-right rotate-6' 
+    visualClass: 'scale-[0.8] origin-bottom-left rotate-6' 
   },
   { 
     level: 3, 

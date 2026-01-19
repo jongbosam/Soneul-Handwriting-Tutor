@@ -39,6 +39,12 @@ export interface FeedbackResult {
   score: number;
   message: string;
   earnedXp: number;
+  metrics: {
+    composition: number; // 자소 배치 (K-PANOSE 1)
+    balance: number;      // 비례 균형 (K-PANOSE 2)
+    center: number;       // 시각적 중심 (K-PANOSE 4)
+    space: number;        // 속공간/여백 (K-PANOSE 7)
+  };
 }
 
 export interface AdminStats {

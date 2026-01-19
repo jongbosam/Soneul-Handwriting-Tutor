@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ToolType } from '../types';
 import { Button } from './Button';
-import { Eraser, Pen, Trash2, CheckCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Eraser, Pen, Trash2, CheckCircle, ArrowLeft, Eye, EyeOff, Grid3X3 } from 'lucide-react';
 
 interface PracticeCanvasProps {
   word: string;
@@ -22,6 +22,7 @@ export const PracticeCanvas: React.FC<PracticeCanvasProps> = ({
   const [activeTool, setActiveTool] = useState<ToolType>(ToolType.PEN);
   const [isDrawing, setIsDrawing] = useState(false);
   const [showGuide, setShowGuide] = useState(true);
+  const [showGrid, setShowGrid] = useState(true);
   
   const activeToolRef = useRef(activeTool);
 
@@ -37,48 +38,53 @@ export const PracticeCanvas: React.FC<PracticeCanvasProps> = ({
 
     if (activeTool === ToolType.PEN) {
       ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = '#2C2C2C'; 
-      ctx.lineWidth = 10; // Slightly thicker for better visibility
+      ctx.strokeStyle = '#1A1A1A'; 
+      ctx.lineWidth = 12; 
     } else {
       ctx.globalCompositeOperation = 'destination-out';
-      ctx.lineWidth = 45; 
+      ctx.lineWidth = 50; 
     }
   }, [activeTool]);
 
   useEffect(() => {
     const handleResize = () => {
-      if (containerRef.current && canvasRef.current) {
-        const { width, height } = containerRef.current.getBoundingClientRect();
-        if (width === 0 || height === 0) return;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-        const tempCanvas = document.createElement('canvas');
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCanvas.width = canvasRef.current.width;
-        tempCanvas.height = canvasRef.current.height;
-        tempCtx?.drawImage(canvasRef.current, 0, 0);
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
 
-        canvasRef.current.width = width;
-        canvasRef.current.height = height;
+      // Save content before resize
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      tempCtx?.drawImage(canvas, 0, 0);
 
-        const ctx = canvasRef.current.getContext('2d');
-        if (ctx) {
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-          ctx.drawImage(tempCanvas, 0, 0, width, height);
-          if (activeToolRef.current === ToolType.PEN) {
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.strokeStyle = '#2C2C2C';
-            ctx.lineWidth = 10;
-          } else {
-            ctx.globalCompositeOperation = 'destination-out';
-            ctx.lineWidth = 45;
-          }
+      // Match internal dimensions to screen dimensions
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        // Restore content scaled to new size
+        ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
+        
+        if (activeToolRef.current === ToolType.PEN) {
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.strokeStyle = '#1A1A1A';
+          ctx.lineWidth = 12;
+        } else {
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.lineWidth = 50;
         }
       }
     };
 
     window.addEventListener('resize', handleResize);
-    handleResize();
+    // Use a small delay to ensure CSS transitions/layout are complete
     const timer = setTimeout(handleResize, 100);
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -94,6 +100,11 @@ export const PracticeCanvas: React.FC<PracticeCanvasProps> = ({
 
     const getPos = (e: MouseEvent | TouchEvent) => {
       const rect = canvas.getBoundingClientRect();
+      
+      // Calculate scale factors in case CSS width/height differs from attribute width/height
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
       let clientX, clientY;
       if ('touches' in e) {
         clientX = e.touches[0].clientX;
@@ -102,7 +113,11 @@ export const PracticeCanvas: React.FC<PracticeCanvasProps> = ({
         clientX = (e as MouseEvent).clientX;
         clientY = (e as MouseEvent).clientY;
       }
-      return { x: clientX - rect.left, y: clientY - rect.top };
+
+      return { 
+        x: (clientX - rect.left) * scaleX, 
+        y: (clientY - rect.top) * scaleY 
+      };
     };
 
     const startDrawing = (e: MouseEvent | TouchEvent) => {
@@ -154,56 +169,62 @@ export const PracticeCanvas: React.FC<PracticeCanvasProps> = ({
     if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
-  const isCanvasBlank = (canvas: HTMLCanvasElement): boolean => {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return true;
-    const pixelBuffer = new Uint32Array(ctx.getImageData(0, 0, canvas.width, canvas.height).data.buffer);
-    return !pixelBuffer.some(color => color !== 0);
-  };
-
   const handleSubmit = () => {
     if (canvasRef.current) {
-      if (isCanvasBlank(canvasRef.current)) {
-        alert("글씨를 먼저 써주세요!");
-        return;
-      }
       onSubmit(canvasRef.current);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-50 flex flex-col h-[100dvh]">
-      <header className="flex-none bg-white px-4 py-2 flex items-center justify-between shadow-sm z-20 border-b border-gray-100">
+    <div className="fixed inset-0 bg-paper flex flex-col h-[100dvh]">
+      <header className="flex-none bg-white/80 backdrop-blur px-4 py-2 flex items-center justify-between shadow-sm z-20 border-b border-gray-100">
         <Button variant="ghost" size="sm" onClick={onBack} icon={<ArrowLeft size={20} />}>
           그만하기
         </Button>
         <div className="flex flex-col items-center">
-          <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Standard Guide</span>
-          <h2 className="text-2xl font-hand text-primary">{word}</h2>
+          <span className="text-[10px] text-gray-400 uppercase tracking-widest font-black">Geometric Practice</span>
+          <h2 className="text-3xl font-hand text-primary drop-shadow-sm">{word}</h2>
         </div>
-        <button 
-          onClick={() => setShowGuide(!showGuide)}
-          className={`p-2 rounded-xl transition-colors ${showGuide ? 'text-blue-500 bg-blue-50' : 'text-gray-400 bg-gray-100'}`}
-          title="가이드 끄기/켜기"
-        >
-          {showGuide ? <Eye size={24} /> : <EyeOff size={24} />}
-        </button>
+        <div className="flex gap-1">
+          <button 
+            onClick={() => setShowGrid(!showGrid)}
+            className={`p-2.5 rounded-xl transition-all ${showGrid ? 'text-primary bg-orange-50' : 'text-gray-300'}`}
+          >
+            <Grid3X3 size={22} />
+          </button>
+          <button 
+            onClick={() => setShowGuide(!showGuide)}
+            className={`p-2.5 rounded-xl transition-all ${showGuide ? 'text-blue-500 bg-blue-50' : 'text-gray-300'}`}
+          >
+            {showGuide ? <Eye size={22} /> : <EyeOff size={22} />}
+          </button>
+        </div>
       </header>
 
-      <div className="flex-1 relative w-full min-h-0 p-3 sm:p-6 flex items-center justify-center overflow-hidden">
-        <div ref={containerRef} className="w-full h-full max-w-4xl relative bg-white rounded-[40px] shadow-2xl border-8 border-white ring-4 ring-orange-50 flex items-center justify-center overflow-hidden">
+      <div className="flex-1 relative w-full min-h-0 p-4 sm:p-8 flex items-center justify-center overflow-hidden">
+        <div ref={containerRef} className="w-full h-full max-w-5xl relative bg-white rounded-[48px] shadow-2xl border-[16px] border-white ring-1 ring-gray-100 flex items-center justify-center overflow-hidden">
              
-             {/* Dynamic Guide Lines (AI-Hub inspired "Standard grid") */}
-             <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 pointer-events-none border border-gray-100/50">
-                <div className="border-r border-b border-gray-100/30"></div>
-                <div className="border-b border-gray-100/30"></div>
-                <div className="border-r border-gray-100/30"></div>
-                <div></div>
-             </div>
+             {/* K-PANOSE Professional Grid */}
+             {showGrid && (
+                <div className="absolute inset-0 pointer-events-none">
+                    {/* 9-Box Grid */}
+                    <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 opacity-[0.05]">
+                        {[...Array(9)].map((_, i) => <div key={i} className="border border-gray-800" />)}
+                    </div>
+                    {/* Diagonal Guides */}
+                    <svg className="absolute inset-0 w-full h-full opacity-[0.03] stroke-gray-900" style={{ strokeWidth: 2 }}>
+                        <line x1="0" y1="0" x2="100%" y2="100%" />
+                        <line x1="100%" y1="0" x2="0" y2="100%" />
+                    </svg>
+                    {/* Center Cross */}
+                    <div className="absolute top-1/2 left-0 w-full h-px bg-primary/10 -translate-y-1/2" />
+                    <div className="absolute left-1/2 top-0 w-px h-full bg-primary/10 -translate-x-1/2" />
+                </div>
+             )}
 
-             {/* Standard Handwriting Skeleton (The Ghost Guide) */}
-             <div className={`absolute inset-0 flex items-center justify-center pointer-events-none select-none transition-opacity duration-500 ${showGuide ? 'opacity-[0.12]' : 'opacity-0'}`}>
-                <span className="text-[150px] sm:text-[250px] md:text-[350px] font-hand text-black font-bold leading-none select-none">
+             {/* Aesthetic Ghost Guide */}
+             <div className={`absolute inset-0 flex items-center justify-center pointer-events-none select-none transition-opacity duration-700 ${showGuide ? 'opacity-[0.1]' : 'opacity-0'}`}>
+                <span className="text-[180px] sm:text-[300px] md:text-[450px] font-hand text-black font-black leading-none tracking-tighter">
                   {word}
                 </span>
              </div>
@@ -213,32 +234,32 @@ export const PracticeCanvas: React.FC<PracticeCanvasProps> = ({
                 className="block touch-none cursor-crosshair w-full h-full rounded-[32px] z-10"
              />
              
-             {/* Corner Accents */}
-             <div className="absolute top-6 left-6 w-12 h-12 border-t-4 border-l-4 border-orange-200 rounded-tl-2xl pointer-events-none"></div>
-             <div className="absolute bottom-6 right-6 w-12 h-12 border-b-4 border-r-4 border-orange-200 rounded-br-2xl pointer-events-none"></div>
+             {/* Dynamic corners */}
+             <div className="absolute top-8 left-8 w-16 h-16 border-t-8 border-l-8 border-gray-50 rounded-tl-3xl pointer-events-none"></div>
+             <div className="absolute bottom-8 right-8 w-16 h-16 border-b-8 border-r-8 border-gray-50 rounded-br-3xl pointer-events-none"></div>
         </div>
       </div>
 
-      <footer className="flex-none bg-white px-4 py-3 sm:py-5 shadow-[0_-10px_30px_-15px_rgba(0,0,0,0.1)] z-20 flex items-center justify-between safe-area-pb">
-        <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-[24px] border border-gray-100">
+      <footer className="flex-none bg-white/90 backdrop-blur px-6 py-4 shadow-[0_-15px_40px_-20px_rgba(0,0,0,0.1)] z-20 flex items-center justify-between safe-area-pb">
+        <div className="flex items-center gap-4 bg-gray-100/50 p-2.5 rounded-[32px]">
           <button 
             onClick={() => setActiveTool(ToolType.PEN)}
-            className={`p-3 sm:p-4 rounded-2xl transition-all ${activeTool === ToolType.PEN ? 'bg-white shadow-lg text-primary scale-110' : 'text-gray-300 hover:text-gray-500'}`}
+            className={`p-4 rounded-[24px] transition-all ${activeTool === ToolType.PEN ? 'bg-white shadow-xl text-primary scale-110' : 'text-gray-400 hover:text-gray-600'}`}
           >
-            <Pen size={24} className="sm:w-8 sm:h-8" fill={activeTool === ToolType.PEN ? "currentColor" : "none"} />
+            <Pen size={28} fill={activeTool === ToolType.PEN ? "currentColor" : "none"} />
           </button>
           <button 
             onClick={() => setActiveTool(ToolType.ERASER)}
-            className={`p-3 sm:p-4 rounded-2xl transition-all ${activeTool === ToolType.ERASER ? 'bg-white shadow-lg text-primary scale-110' : 'text-gray-300 hover:text-gray-500'}`}
+            className={`p-4 rounded-[24px] transition-all ${activeTool === ToolType.ERASER ? 'bg-white shadow-xl text-primary scale-110' : 'text-gray-400 hover:text-gray-600'}`}
           >
-            <Eraser size={24} className="sm:w-8 sm:h-8" />
+            <Eraser size={28} />
           </button>
-          <div className="w-px h-8 bg-gray-200 mx-1"></div>
+          <div className="w-px h-10 bg-gray-200" />
           <button 
             onClick={clearCanvas}
-            className="p-3 sm:p-4 rounded-2xl text-red-300 hover:bg-red-50 hover:text-red-500 transition-all active:scale-90"
+            className="p-4 rounded-[24px] text-gray-300 hover:text-red-400 transition-all active:scale-90"
           >
-            <Trash2 size={24} className="sm:w-8 sm:h-8" />
+            <Trash2 size={28} />
           </button>
         </div>
 
@@ -246,10 +267,10 @@ export const PracticeCanvas: React.FC<PracticeCanvasProps> = ({
           variant="primary" 
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="w-auto px-8 py-4 sm:px-12 sm:py-5 text-xl sm:text-2xl rounded-3xl shadow-orange-200"
-          icon={isSubmitting ? <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div> : <CheckCircle size={28} />}
+          className="w-auto px-16 py-5 rounded-[32px] text-2xl shadow-orange-200"
+          icon={isSubmitting ? <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin" /> : <CheckCircle size={32} />}
         >
-          {isSubmitting ? '분석 중...' : '제출하기'}
+          {isSubmitting ? '정밀 분석 중...' : '제출하기'}
         </Button>
       </footer>
     </div>

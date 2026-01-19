@@ -13,12 +13,11 @@ export const CustomCursor: React.FC<CustomCursorProps> = ({ level }) => {
   useEffect(() => {
     const updatePosition = (e: MouseEvent) => {
       if (cursorRef.current) {
-        // We use two translates: 
-        // 1. Move the div to the mouse position.
-        // 2. Shift the div so its bottom-right corner (-100%, -100%) is at that position.
-        // 3. Add a small offset (6px, 6px) to align the visual "tip" (which is often recessed due to padding) 
-        //    precisely with the mouse pointer.
-        cursorRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-100%, -100%) translate(6px, 6px)`;
+        // Precise alignment: 
+        // 1. Position at mouse x,y
+        // 2. translate(-100%, -100%) puts the bottom-right corner of the emoji (the tip) exactly at the pointer.
+        // We removed the arbitrary 6px offset to improve accuracy.
+        cursorRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0) translate(-100%, -100%)`;
       }
       if (!isVisible) setIsVisible(true);
     };

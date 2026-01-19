@@ -1,61 +1,115 @@
 
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps } from 'firebase/app';
 import { 
   getFirestore, 
   doc, 
   setDoc, 
   getDoc, 
   collection, 
-  getDocs, 
-  query, 
-  orderBy, 
-  limit 
+  getDocs,
+  enableIndexedDbPersistence,
+  terminate
 } from 'firebase/firestore';
 import { UserState, AdminStats, UserRole } from '../types';
 
-// Note: In a real app, replace these with your actual Firebase config.
-// For now, we'll try to use the environment key if available as a placeholder.
+// Use a truly placeholder-looking project ID to avoid accidental attempts on locked projects
 const firebaseConfig = {
-  apiKey: process.env.API_KEY || "dummy-key",
-  authDomain: "soneul-app.firebaseapp.com",
-  projectId: "soneul-app",
-  storageBucket: "soneul-app.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef"
+  apiKey: process.env.API_KEY || "",
+  authDomain: "your-project-id.firebaseapp.com",
+  projectId: "placeholder-project-id", // Changed from 'soneul-app' to be clearly a placeholder
+  storageBucket: "your-project-id.appspot.com",
+  messagingSenderId: "000000000",
+  appId: "1:000000000:web:000000000"
 };
 
-// Initialize Firebase only if it's not already initialized
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+let db: any = null;
+
+const initializeFirebase = async () => {
+  // If no valid-looking API key is present, don't even try Firestore to avoid 403/404 noise
+  const hasValidConfig = firebaseConfig.apiKey && 
+                         firebaseConfig.apiKey !== "dummy-key" && 
+                         firebaseConfig.projectId !== "placeholder-project-id";
+
+  if (!hasValidConfig) return;
+
+  try {
+    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+    const firestore = getFirestore(app);
+    
+    // Enable offline persistence
+    if (typeof window !== 'undefined') {
+      try {
+        await enableIndexedDbPersistence(firestore);
+      } catch (err: any) {
+        if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') {
+          // Just ignore persistence errors, not critical
+        }
+      }
+    }
+    db = firestore;
+  } catch (e) {
+    // Silent fail for initialization - app will rely on LocalStorage
+    db = null;
+  }
+};
+
+// Start initialization immediately but silently
+initializeFirebase();
 
 export const saveUserData = async (user: UserState) => {
   if (!user.id) return;
-  try {
-    await setDoc(doc(db, 'users', user.id), user, { merge: true });
-  } catch (error) {
-    console.error("Error saving to Firestore:", error);
-    // Fallback to localStorage
-    localStorage.setItem(`soneul_data_${user.id}`, JSON.stringify(user));
+  
+  // 1. Core storage: LocalStorage (Primary and Reliable)
+  localStorage.setItem(`soneul_backup_${user.id}`, JSON.stringify(user));
+
+  // 2. Optional sync: Firestore (Secondary)
+  if (db) {
+    try {
+      await setDoc(doc(db, 'users', user.id), user, { merge: true });
+    } catch (error: any) {
+      // If we get a permission error, we null out db to stop future noise
+      if (error.code === 'permission-denied' || error.code === 'not-found') {
+        db = null;
+      }
+    }
   }
 };
 
 export const loadUserData = async (id: string): Promise<UserState | null> => {
-  try {
-    const docRef = doc(db, 'users', id);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return docSnap.data() as UserState;
+  // 1. Try Firestore if we think we have a connection
+  if (db) {
+    try {
+      const docRef = doc(db, 'users', id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data() as UserState;
+        localStorage.setItem(`soneul_backup_${id}`, JSON.stringify(data));
+        return data;
+      }
+    } catch (error: any) {
+      // Permission issues or project not found - stop trying this session
+      if (error.code === 'permission-denied' || error.code === 'not-found') {
+        db = null;
+      }
     }
-  } catch (error) {
-    console.error("Error loading from Firestore:", error);
   }
   
-  // Fallback to localStorage
-  const localData = localStorage.getItem(`soneul_data_${id}`);
+  // 2. Reliable fallback to LocalStorage
+  const localData = localStorage.getItem(`soneul_backup_${id}`);
   return localData ? JSON.parse(localData) : null;
 };
 
 export const getAdminStats = async (): Promise<AdminStats> => {
+  const emptyStats: AdminStats = { 
+    totalStudents: 0, 
+    avgScore: 0, 
+    totalXP: 0, 
+    levelDistribution: {}, 
+    topStudents: [] 
+  };
+  
+  if (!db) return emptyStats;
+
   try {
     const usersSnap = await getDocs(collection(db, 'users'));
     const allUsers: UserState[] = [];
@@ -66,9 +120,7 @@ export const getAdminStats = async (): Promise<AdminStats> => {
       }
     });
 
-    if (allUsers.length === 0) {
-      return { totalStudents: 0, avgScore: 0, totalXP: 0, levelDistribution: {}, topStudents: [] };
-    }
+    if (allUsers.length === 0) return emptyStats;
 
     const levelDist: Record<number, number> = {};
     let totalScore = 0;
@@ -91,8 +143,10 @@ export const getAdminStats = async (): Promise<AdminStats> => {
       levelDistribution: levelDist,
       topStudents: [...allUsers].sort((a, b) => (b.level * 1000 + b.xp) - (a.level * 1000 + a.xp)).slice(0, 5)
     };
-  } catch (error) {
-    console.error("Error fetching stats:", error);
-    return { totalStudents: 0, avgScore: 0, totalXP: 0, levelDistribution: {}, topStudents: [] };
+  } catch (error: any) {
+    if (error.code === 'permission-denied' || error.code === 'not-found') {
+      db = null;
+    }
+    return emptyStats;
   }
 };

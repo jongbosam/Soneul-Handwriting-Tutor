@@ -1,9 +1,6 @@
 
 import { FeedbackResult } from '../types';
 
-/**
- * Optimizes the canvas for AI analysis.
- */
 const optimizeCanvas = (sourceCanvas: HTMLCanvasElement): string => {
   const ctx = sourceCanvas.getContext('2d');
   if (!ctx) return sourceCanvas.toDataURL('image/jpeg', 0.5).split(',')[1];
@@ -37,7 +34,7 @@ const optimizeCanvas = (sourceCanvas: HTMLCanvasElement): string => {
     return empty.toDataURL('image/jpeg', 0.4).split(',')[1];
   }
 
-  const PADDING = 15;
+  const PADDING = 20;
   minX = Math.max(0, minX - PADDING);
   minY = Math.max(0, minY - PADDING);
   maxX = Math.min(width, maxX + PADDING);
@@ -45,7 +42,7 @@ const optimizeCanvas = (sourceCanvas: HTMLCanvasElement): string => {
 
   const cropWidth = maxX - minX;
   const cropHeight = maxY - minY;
-  const MAX_DIM = 320; 
+  const MAX_DIM = 512; 
   const scale = Math.min(1, MAX_DIM / Math.max(cropWidth, cropHeight));
   
   const targetWidth = Math.floor(cropWidth * scale);
@@ -59,32 +56,24 @@ const optimizeCanvas = (sourceCanvas: HTMLCanvasElement): string => {
   if (!tempCtx) return sourceCanvas.toDataURL('image/jpeg', 0.5).split(',')[1];
   tempCtx.fillStyle = '#FFFFFF';
   tempCtx.fillRect(0, 0, targetWidth, targetHeight);
-
   tempCtx.drawImage(sourceCanvas, minX, minY, cropWidth, cropHeight, 0, 0, targetWidth, targetHeight);
 
-  const processedData = tempCtx.getImageData(0, 0, targetWidth, targetHeight);
-  const px = processedData.data;
-  for (let i = 0; i < px.length; i += 4) {
-    const brightness = (px[i] + px[i + 1] + px[i + 2]) / 3;
-    if (brightness < 210) {
-        px[i] = 0; px[i+1] = 0; px[i+2] = 0;
-    } else {
-        px[i] = 255; px[i+1] = 255; px[i+2] = 255;
-    }
-  }
-  tempCtx.putImageData(processedData, 0, 0);
-
-  return tempCanvas.toDataURL('image/jpeg', 0.4).split(',')[1];
+  return tempCanvas.toDataURL('image/jpeg', 0.6).split(',')[1];
 };
 
 const getFallbackResult = (word: string): Promise<FeedbackResult> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const score = 85 + Math.floor(Math.random() * 10); // Generous fallback
       resolve({
-        score,
-        message: `정말 훌륭해요! '${word}'를 아주 정성스럽게 썼네요!`,
-        earnedXp: score >= 90 ? 20 : 15
+        score: 85,
+        message: `정말 훌륭해요! '${word}'를 정성스럽게 썼네요!`,
+        earnedXp: 15,
+        metrics: {
+          composition: 80,
+          balance: 85,
+          center: 90,
+          space: 80
+        }
       });
     }, 1000);
   });
@@ -94,7 +83,6 @@ export const analyzeHandwriting = async (word: string, canvas: HTMLCanvasElement
   const apiKey = process.env.API_KEY;
 
   if (!apiKey) {
-    console.warn("No API_KEY found. Using fallback.");
     return getFallbackResult(word);
   }
 
@@ -103,53 +91,73 @@ export const analyzeHandwriting = async (word: string, canvas: HTMLCanvasElement
     const ai = new GoogleGenAI({ apiKey });
     const base64Data = optimizeCanvas(canvas);
 
+    // Use 'gemini-3-flash-preview' for robust handwriting analysis and vision support
     const response = await ai.models.generateContent({
-      model: 'gemini-flash-lite-latest',
+      model: 'gemini-3-flash-preview',
       contents: {
         parts: [
           { inlineData: { mimeType: 'image/jpeg', data: base64Data } },
-          { text: `Target word: "${word}". Evaluate this student's handwriting with kindness.` }
+          { text: `사용자가 쓴 글자: "${word}". K-PANOSE 지표와 기하학적 균형을 바탕으로 상세 분석을 진행해주세요.` }
         ]
       },
       config: {
         systemInstruction: `
-          Role: Kind and Encouraging Korean Elementary School Teacher.
-          
-          Analysis Rules (For Kids):
-          1. Generosity First: If the word is clearly recognizable as "${word}", start with at least 80 points.
-          2. Effort over Perfection: Minor shaky lines or slight imbalances should NOT be penalized heavily.
-          3. Legibility: As long as the initial, medial, and final consonants are in the right general place, give a high score.
-          4. No Hard Critiques: Avoid words like "bad", "wrong", "collapsed", or "poor". Use "try a bit more", "almost perfect", or "charming".
+          당신은 한글 서예 전문가이자 초등 교육 전문가입니다. 
+          사용자의 손글씨 이미지를 분석하여 K-PANOSE(Korean Font PANOSE) 지표를 기반으로 피드백을 생성합니다.
 
-          Feedback Algorithm (Be Generous!):
-          - Score 95-100: "우와! 최고의 글씨예요! 명필 탄생이네요!"
-          - Score 80-94: "정말 잘 썼어요! 조금만 더 천천히 쓰면 100점이 될 거예요!"
-          - Score 60-79: "좋은 시도예요! 글자 모양을 조금만 더 크게 그려볼까요?"
-          - Score < 60: (Only for scribbles) "선생님이 글씨를 더 잘 볼 수 있게 다시 한번 써볼까요?"
+          평가 기준 (0-100점):
+          1. 자소 배치 (Composition): 초/중/종성의 위치가 네모틀 안에서 조화로운가.
+          2. 비례 균형 (Balance): 글자 내 자음과 모음의 크기 비율이 표준에 가까운가.
+          3. 시각적 중심 (Center): 무게중심이 중앙 혹은 약간 하단에 안정적으로 위치하는가.
+          4. 속공간 (Space): 글자 내부의 하얀 여백이 뭉치지 않고 고르게 분포하는가.
 
-          Output Format (Strict JSON):
-          { "score": number, "message": "string (1 very encouraging sentence in Korean)" }
+          분석 가이드:
+          - 아이들에게 매우 다정하고 구체적으로 설명해주세요.
+          - "자소 배치" 대신 "글자들의 자리", "시각적 중심" 대신 "글자의 무게중심" 등 쉬운 용어를 섞어서 메시지를 작성하세요.
+          - 전체 점수는 4가지 지표의 가중 평균으로 계산합니다.
+
+          응답 형식 (Strict JSON):
+          {
+            "score": 전체 점수 (Integer),
+            "message": "아이를 격려하는 다정하고 구체적인 한글 메시지 (K-PANOSE 지표 중 하나를 언급)",
+            "metrics": {
+              "composition": 점수,
+              "balance": 점수,
+              "center": 점수,
+              "space": 점수
+            }
+          }
         `,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
             score: { type: Type.INTEGER },
-            message: { type: Type.STRING }
+            message: { type: Type.STRING },
+            metrics: {
+              type: Type.OBJECT,
+              properties: {
+                composition: { type: Type.INTEGER },
+                balance: { type: Type.INTEGER },
+                center: { type: Type.INTEGER },
+                space: { type: Type.INTEGER }
+              },
+              required: ["composition", "balance", "center", "space"]
+            }
           },
-          required: ["score", "message"]
-        },
-        thinkingConfig: { thinkingBudget: 0 }
+          required: ["score", "message", "metrics"]
+        }
       }
     });
 
     const result = JSON.parse(response.text || '{}');
-    const score = result.score ?? 70; // Higher default score
+    const score = result.score ?? 70;
 
     return {
       score,
-      message: result.message || "참 잘했어요! 대단해요!",
-      earnedXp: score >= 90 ? 20 : score >= 75 ? 15 : score >= 50 ? 5 : 0
+      message: result.message || "참 잘했어요!",
+      earnedXp: score >= 90 ? 25 : score >= 75 ? 15 : score >= 50 ? 5 : 0,
+      metrics: result.metrics
     };
 
   } catch (error) {

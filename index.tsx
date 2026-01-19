@@ -1,6 +1,8 @@
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import './index.css'; // 이 줄이 빠지면 디자인이 깨집니다!
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

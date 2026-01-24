@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -14,7 +15,7 @@ export const Button: React.FC<ButtonProps> = ({
   className = '',
   ...props 
 }) => {
-  const baseStyles = "font-bold rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 border-b-4 disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseStyles = "rounded-2xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 border-b-4 disabled:opacity-50 disabled:cursor-not-allowed";
   
   const variants = {
     primary: "bg-primary text-white border-orange-500 hover:bg-orange-400",

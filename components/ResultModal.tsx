@@ -28,22 +28,25 @@ export const ResultModal: React.FC<ResultModalProps> = ({ result, onClose }) => 
           style={{ height: `${value}%`, backgroundColor: color }}
         />
       </div>
-      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{label}</span>
-      <span className="text-xs font-black" style={{ color }}>{value}</span>
+      <span className="text-xs text-gray-400 mt-1">{label}</span>
+      <span className="text-sm font-bold" style={{ color }}>{value}</span>
     </div>
   );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-white rounded-[48px] p-6 md:p-10 max-w-lg w-full shadow-2xl border-[12px] transform scale-100 animate-in zoom-in-95 duration-300 overflow-hidden relative" style={{ borderColor: scoreColor }}>
+      <div 
+        className="bg-white rounded-[48px] p-6 md:p-10 max-w-lg w-full shadow-2xl border-[12px] transform scale-100 animate-in zoom-in-95 duration-300 overflow-y-auto max-h-[90dvh] relative" 
+        style={{ borderColor: scoreColor }}
+      >
         
         {/* Background Sparkles */}
         <div className="absolute top-4 right-4 text-4xl opacity-20">✨</div>
         <div className="absolute bottom-4 left-4 text-4xl opacity-20">⭐</div>
 
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-black text-gray-800 mb-1">글씨 분석 결과</h2>
-          <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">K-PANOSE Handwriting Analysis</div>
+          <h2 className="text-3xl text-gray-800 mb-1">글씨 분석 결과</h2>
+          <div className="text-sm text-gray-400">K-PANOSE Handwriting Analysis</div>
         </div>
 
         <div className="flex flex-col md:flex-row items-center gap-8 mb-8">
@@ -63,8 +66,8 @@ export const ResultModal: React.FC<ResultModalProps> = ({ result, onClose }) => 
                     />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-4xl md:text-5xl font-black text-gray-700">{result.score}</span>
-                    <span className="text-[10px] text-gray-400 font-bold">점수</span>
+                    <span className="text-5xl text-gray-700">{result.score}</span>
+                    <span className="text-sm text-gray-400">점수</span>
                 </div>
             </div>
 
@@ -77,9 +80,9 @@ export const ResultModal: React.FC<ResultModalProps> = ({ result, onClose }) => 
             </div>
         </div>
 
-        <div className="bg-gray-50 rounded-3xl p-5 mb-8 border-2 border-dashed border-gray-200 relative">
-            <div className="absolute -top-3 left-6 bg-white px-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">AI Teacher says</div>
-            <p className="text-lg text-center text-gray-700 font-bold leading-relaxed break-keep">
+        <div className="bg-gray-50 rounded-3xl p-6 mb-8 border-2 border-dashed border-gray-200 relative">
+            <div className="absolute -top-3 left-6 bg-white px-2 text-xs text-gray-400">AI 선생님의 피드백</div>
+            <p className="text-xl text-center text-gray-700 leading-relaxed break-keep">
                 "{result.message}"
             </p>
         </div>
@@ -90,11 +93,11 @@ export const ResultModal: React.FC<ResultModalProps> = ({ result, onClose }) => 
                     <Star fill="currentColor" size={20} />
                 </div>
                 <div>
-                    <div className="text-[10px] text-gray-400 font-bold uppercase">Experience</div>
-                    <div className="text-lg font-black text-accent">+{result.earnedXp} XP</div>
+                    <div className="text-xs text-gray-400 uppercase">Experience</div>
+                    <div className="text-xl text-accent">+{result.earnedXp} XP</div>
                 </div>
             </div>
-            <Button onClick={onClose} size="lg" className="px-12 rounded-[28px]">계속하기</Button>
+            <Button onClick={onClose} size="lg" className="px-12 rounded-[28px] text-xl">계속하기</Button>
         </div>
       </div>
     </div>

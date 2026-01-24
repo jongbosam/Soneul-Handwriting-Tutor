@@ -36,13 +36,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
           <div className="inline-flex items-center justify-center w-24 h-24 bg-orange-50 rounded-full mb-6 animate-bounce-slow">
             <span className="text-6xl">✏️</span>
           </div>
-          <h1 className="text-4xl font-black text-gray-800 mb-2 tracking-tight">손을 (Soneul)</h1>
-          <p className="text-gray-400 font-bold">우리 아이들의 즐거운 글씨 모험</p>
+          <h1 className="text-4xl text-gray-800 mb-2">손을 (Soneul)</h1>
+          <p className="text-gray-400 text-lg">우리 아이들의 즐거운 글씨 모험</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="relative">
-            <label htmlFor="schoolId" className="block text-sm font-black text-gray-400 uppercase tracking-widest mb-3 ml-2">
+            <label htmlFor="schoolId" className="block text-base text-gray-500 mb-3 ml-2">
               나의 비밀 코드 입력
             </label>
             <input
@@ -54,13 +54,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                 setError('');
               }}
               placeholder="예: 홍길동1234"
-              className="w-full px-8 py-5 text-2xl bg-gray-50 border-4 border-gray-100 rounded-3xl focus:border-primary/30 focus:bg-white focus:outline-none transition-all placeholder:text-gray-200 font-bold text-gray-700"
+              className="w-full px-8 py-5 text-xl bg-gray-50 border-4 border-gray-100 rounded-3xl focus:border-primary/30 focus:bg-white focus:outline-none transition-all placeholder:text-gray-300 text-gray-700"
             />
             {error ? (
-              <p className="text-red-400 mt-3 font-bold text-center animate-pulse">{error}</p>
+              <p className="text-red-400 mt-3 text-center animate-pulse">{error}</p>
             ) : (
-              <p className="text-gray-300 mt-3 text-xs text-center flex items-center justify-center gap-1 font-bold">
-                <ShieldCheck size={14} /> 로그인이 필요 없는 안전한 학습 모드입니다.
+              <p className="text-gray-400 mt-3 text-sm text-center flex items-center justify-center gap-1">
+                <ShieldCheck size={16} /> 로그인이 필요 없는 안전한 학습 모드입니다.
               </p>
             )}
           </div>
@@ -68,26 +68,26 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
           <Button 
             type="submit" 
             size="lg" 
-            className="w-full py-6 rounded-[32px] text-2xl shadow-orange-100"
-            icon={<Rocket size={28} className="animate-pulse" />}
+            className="w-full py-6 rounded-[32px] text-xl shadow-orange-100"
+            icon={<Rocket size={24} className="animate-pulse" />}
           >
             모험 시작하기!
           </Button>
         </form>
 
         <div className="mt-10 pt-8 border-t-2 border-dashed border-gray-50 flex flex-col items-center">
-            <p className="text-[10px] text-gray-300 font-black uppercase tracking-tighter mb-2">Teacher Access</p>
+            <p className="text-sm text-gray-300 mb-2">TEACHER ACCESS</p>
             <button 
                 type="button"
                 onClick={() => setSchoolId('admin.soneul')}
-                className="text-xs text-gray-400 hover:text-primary transition-colors font-bold"
+                className="text-sm text-gray-400 hover:text-primary transition-colors underline underline-offset-4"
             >
                 선생님 전용 페이지 접속하기
             </button>
         </div>
       </div>
       
-      <p className="mt-8 text-gray-300 text-xs font-bold opacity-50">© 2025 Soneul EdTech Project</p>
+      <p className="mt-8 text-gray-300 text-sm opacity-50">© 2025 Soneul EdTech Project</p>
     </div>
   );
 };

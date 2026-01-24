@@ -106,11 +106,36 @@ export const LEVELS: LevelData[] = [
 ];
 
 export const PRACTICE_WORDS = [
-  { id: 1, text: '하늘', hint: 'Sky' },
-  { id: 2, text: '바다', hint: 'Sea' },
-  { id: 3, text: '나무', hint: 'Tree' },
-  { id: 4, text: '사랑', hint: 'Love' },
-  { id: 5, text: '친구', hint: 'Friend' },
+  { id: 1, text: "가게", hint: "shop; store", grade: "low" },
+  { id: 2, text: "가격", hint: "price", grade: "low" },
+  { id: 3, text: "가구", hint: "furniture", grade: "low" },
+  { id: 4, text: "가깝다", hint: "close; near", grade: "low" },
+  { id: 5, text: "가능성", hint: "possibility", grade: "middle" },
+  { id: 6, text: "가난", hint: "poverty", grade: "middle" },
+  { id: 7, text: "가르침", hint: "teaching", grade: "middle" },
+  { id: 8, text: "가리키다", hint: "point; indicate", grade: "low" },
+  { id: 9, text: "가만히", hint: "still; motionlessly", grade: "low" },
+  { id: 10, text: "가볍다", hint: "light", grade: "low" },
+  { id: 11, text: "가수", hint: "singer", grade: "low" },
+  { id: 12, text: "가슴", hint: "chest; breast", grade: "low" },
+  { id: 13, text: "가입", hint: "initiation; joining", grade: "middle" },
+  { id: 14, text: "가장", hint: "most; best", grade: "low" },
+  { id: 15, text: "가정", hint: "home; family", grade: "low" },
+  { id: 16, text: "가족", hint: "family", grade: "low" },
+  { id: 17, text: "가죽", hint: "leather", grade: "middle" },
+  { id: 18, text: "가지", hint: "branch", grade: "middle" },
+  { id: 19, text: "가치", hint: "value; worth", grade: "high" },
+  { id: 20, text: "각각", hint: "each; respectively", grade: "middle" },
+  { id: 21, text: "각자", hint: "each one; everyone", grade: "middle" },
+  { id: 22, text: "각종", hint: "various kinds", grade: "middle" },
+  { id: 23, text: "간격", hint: "interval; space", grade: "high" },
+  { id: 24, text: "간단하다", hint: "simple; brief", grade: "low" },
+  { id: 25, text: "간식", hint: "snack", grade: "low" },
+  { id: 26, text: "간절하다", hint: "ardent; earnest", grade: "high" },
+  { id: 27, text: "간접", hint: "indirectness", grade: "high" },
+  { id: 28, text: "간판", hint: "signboard", grade: "middle" },
+  { id: 29, text: "간호사", hint: "nurse", grade: "low" },
+  { id: 30, text: "갈등", hint: "conflict", grade: "high" }
 ];
 
 export const MOCK_FEEDBACK_MESSAGES = {

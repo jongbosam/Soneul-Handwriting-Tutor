@@ -29,20 +29,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     return (
       <div className="min-h-screen bg-paper flex flex-col items-center justify-center p-6">
         <RefreshCw size={48} className="text-primary animate-spin mb-4" />
-        <p className="text-xl font-bold text-gray-500">학생들의 성장 기록을 불러오는 중...</p>
+        <p className="text-xl text-gray-500">학생들의 성장 기록을 불러오는 중...</p>
       </div>
     );
   }
+
+  // Calculate max count to scale bars properly (highest bar fills the height)
+  const maxCount = stats ? Math.max(...Object.values(stats.levelDistribution), 1) : 1;
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8 flex flex-col items-center overflow-y-auto">
       <header className="w-full max-w-6xl flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-black text-gray-800 flex items-center gap-2">
+          <h1 className="text-3xl text-gray-800 flex items-center gap-2">
             <Award className="text-primary" size={32} />
             선생님용 관리 도구
           </h1>
-          <p className="text-gray-500">우리 반 학생들의 글씨 성장 리포트</p>
+          <p className="text-gray-500 text-lg">우리 반 학생들의 글씨 성장 리포트</p>
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={fetchStats} icon={<RefreshCw size={18} />}>새로고침</Button>
@@ -57,8 +60,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
             <Users size={32} />
           </div>
           <div>
-            <div className="text-sm text-gray-400 font-bold uppercase">전체 학생</div>
-            <div className="text-3xl font-black text-gray-800">{stats?.totalStudents}명</div>
+            <div className="text-sm text-gray-400 mb-1">전체 학생</div>
+            <div className="text-3xl text-gray-800">{stats?.totalStudents}명</div>
           </div>
         </div>
         
@@ -67,8 +70,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
             <TrendingUp size={32} />
           </div>
           <div>
-            <div className="text-sm text-gray-400 font-bold uppercase">평균 일치율</div>
-            <div className="text-3xl font-black text-gray-800">{stats?.avgScore}%</div>
+            <div className="text-sm text-gray-400 mb-1">평균 일치율</div>
+            <div className="text-3xl text-gray-800">{stats?.avgScore}%</div>
           </div>
         </div>
 
@@ -77,8 +80,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
             <Star size={32} />
           </div>
           <div>
-            <div className="text-sm text-gray-400 font-bold uppercase">총 획득 XP</div>
-            <div className="text-3xl font-black text-gray-800">{stats?.totalXP.toLocaleString()}</div>
+            <div className="text-sm text-gray-400 mb-1">총 획득 XP</div>
+            <div className="text-3xl text-gray-800">{stats?.totalXP.toLocaleString()}</div>
           </div>
         </div>
       </div>
@@ -86,26 +89,42 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full max-w-6xl mb-12">
         {/* Level Distribution Chart (Custom Bar Chart) */}
         <div className="bg-white p-8 rounded-[40px] shadow-xl">
-          <h3 className="text-xl font-bold text-gray-700 mb-6 flex items-center gap-2">
+          <h3 className="text-xl text-gray-700 mb-6 flex items-center gap-2">
             <BarChart3 className="text-purple-500" size={24} />
             레벨별 인원 분포
           </h3>
-          <div className="flex items-end justify-between h-48 gap-2 pt-4">
-            {LEVELS.slice(0, 6).map((lvl) => {
+          <div className="flex items-end justify-between h-64 gap-1 sm:gap-2 pt-8 pb-2 border-b border-gray-100">
+            {LEVELS.map((lvl) => {
               const count = stats?.levelDistribution[lvl.level] || 0;
-              const height = stats?.totalStudents ? (count / stats.totalStudents) * 100 : 0;
+              // Scale height relative to the max count found, so the chart looks full
+              const heightPercentage = (count / maxCount) * 100;
+              const displayHeight = count === 0 ? 5 : Math.max(heightPercentage, 10);
+
               return (
-                <div key={lvl.level} className="flex-1 flex flex-col items-center group">
-                  <div className="text-xs font-bold text-gray-400 mb-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div key={lvl.level} className="flex-1 flex flex-col items-center group relative h-full justify-end">
+                  {/* Tooltip Count - Always visible if has count, else on hover */}
+                  <div 
+                    className={`mb-2 text-xs font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 transition-all transform ${count > 0 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0'}`}
+                  >
                     {count}명
                   </div>
+
+                  {/* The Bar */}
                   <div 
-                    className="w-full bg-indigo-100 rounded-t-xl transition-all duration-1000 relative group-hover:bg-indigo-300"
-                    style={{ height: `${Math.max(height, 5)}%` }}
+                    className={`w-full max-w-[24px] sm:max-w-[32px] rounded-t-xl transition-all duration-1000 relative flex items-end justify-center overflow-hidden ${count > 0 ? 'bg-indigo-400 shadow-lg shadow-indigo-100' : 'bg-gray-100'}`}
+                    style={{ height: `${displayHeight}%` }}
                   >
-                     <div className="absolute top-2 left-1/2 -translate-x-1/2 text-lg">{lvl.icon}</div>
+                     {/* Icon inside bar */}
+                     <div className="mb-2 text-xs sm:text-sm transform transition-transform group-hover:scale-125">{lvl.icon}</div>
+                     
+                     {/* Shimmer effect for active bars */}
+                     {count > 0 && (
+                        <div className="absolute inset-0 bg-white/20 w-full -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></div>
+                     )}
                   </div>
-                  <div className="text-[10px] font-bold text-gray-500 mt-2 truncate w-full text-center">
+                  
+                  {/* X-Axis Label */}
+                  <div className="text-[10px] sm:text-xs text-gray-400 mt-2 text-center font-medium">
                     Lv.{lvl.level}
                   </div>
                 </div>
@@ -116,7 +135,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
         {/* Top Performers List */}
         <div className="bg-white p-8 rounded-[40px] shadow-xl">
-          <h3 className="text-xl font-bold text-gray-700 mb-6 flex items-center gap-2">
+          <h3 className="text-xl text-gray-700 mb-6 flex items-center gap-2">
             <Award className="text-orange-500" size={24} />
             글씨 왕 실시간 랭킹
           </h3>
@@ -124,17 +143,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
             {stats?.topStudents.map((student, idx) => (
               <div key={student.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl hover:scale-[1.02] transition-transform">
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white ${idx === 0 ? 'bg-yellow-400' : idx === 1 ? 'bg-slate-300' : idx === 2 ? 'bg-orange-300' : 'bg-gray-200'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold shadow-sm ${idx === 0 ? 'bg-yellow-400 ring-2 ring-yellow-200' : idx === 1 ? 'bg-slate-300' : idx === 2 ? 'bg-orange-300' : 'bg-gray-200'}`}>
                     {idx + 1}
                   </div>
                   <div>
-                    <div className="font-black text-gray-800">{student.name}</div>
+                    <div className="text-gray-800 text-lg font-medium">{student.name}</div>
                     <div className="text-xs text-gray-400">Lv.{student.level} {student.levelName}</div>
                   </div>
                 </div>
                 <div className="text-right">
-                   <div className="text-primary font-bold">{student.xp} XP</div>
-                   <div className="text-[10px] text-gray-400 uppercase tracking-tighter">Total Success: {student.history.length}</div>
+                   <div className="text-primary text-lg font-bold">{student.xp} XP</div>
+                   <div className="text-[10px] text-gray-400 uppercase tracking-wider font-medium">Total Success: {student.history.length}</div>
                 </div>
               </div>
             ))}

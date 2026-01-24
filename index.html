@@ -18,7 +18,7 @@
               ink: '#2C2C2C',
             },
             fontFamily: {
-              sans: ['"Jua"', '"Gaegu"', 'sans-serif'],
+              sans: ['"Jua"', 'sans-serif'], // Jua를 기본 폰트로 통일
             },
             animation: {
               'bounce-slow': 'bounce 3s infinite',
@@ -40,7 +40,10 @@
         font-family: 'Jua', sans-serif;
         background-color: #FFF9E6;
         overscroll-behavior: none;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
+      /* 손글씨 연습용 타겟 텍스트에만 적용 */
       .font-hand {
         font-family: 'Gaegu', cursive;
       }

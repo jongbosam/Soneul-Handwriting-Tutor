@@ -1,25 +1,24 @@
 
 import { initializeApp, getApps } from 'firebase/app';
 import { 
-  getFirestore, 
+  initializeFirestore,
+  persistentLocalCache,
   doc, 
   setDoc, 
   getDoc, 
   collection, 
-  getDocs,
-  enableIndexedDbPersistence,
-  terminate
+  getDocs
 } from 'firebase/firestore';
 import { UserState, AdminStats, UserRole } from '../types';
 
 // Use a truly placeholder-looking project ID to avoid accidental attempts on locked projects
 const firebaseConfig = {
-  apiKey: process.env.API_KEY || "",
-  authDomain: "your-project-id.firebaseapp.com",
-  projectId: "placeholder-project-id", // Changed from 'soneul-app' to be clearly a placeholder
-  storageBucket: "your-project-id.appspot.com",
-  messagingSenderId: "000000000",
-  appId: "1:000000000:web:000000000"
+  apiKey: "AIzaSyD3yZGqQ-5lk_i6qmI6eaLWU9-i5vXeXxI",
+  authDomain: "soneul-handwriting.firebaseapp.com",
+  projectId: "soneul-handwriting",
+  storageBucket: "soneul-handwriting.firebasestorage.app",
+  messagingSenderId: "821141254081",
+  appId: "1:821141254081:web:fe628aad7e13ceb0224940"
 };
 
 let db: any = null;
@@ -34,18 +33,13 @@ const initializeFirebase = async () => {
 
   try {
     const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-    const firestore = getFirestore(app);
     
-    // Enable offline persistence
-    if (typeof window !== 'undefined') {
-      try {
-        await enableIndexedDbPersistence(firestore);
-      } catch (err: any) {
-        if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') {
-          // Just ignore persistence errors, not critical
-        }
-      }
-    }
+    // Initialize Firestore with persistent local cache enabled (Modern approach)
+    // This replaces the deprecated enableIndexedDbPersistence flow
+    const firestore = initializeFirestore(app, {
+      localCache: persistentLocalCache()
+    });
+    
     db = firestore;
   } catch (e) {
     // Silent fail for initialization - app will rely on LocalStorage

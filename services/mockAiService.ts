@@ -102,7 +102,7 @@ export const analyzeHandwriting = async (word: string, canvas: HTMLCanvasElement
       },
       config: {
         systemInstruction: `
-          당신은 한글 서예 전문가이자 초등 교육 전문가입니다. 
+          당신은 한글 손글씨 및 서체 분석 전문가이자 초등 교육 전문가입니다. 
           사용자의 손글씨 이미지를 분석하여 K-PANOSE(Korean Font PANOSE) 지표를 기반으로 피드백을 생성합니다.
 
           평가 기준 (0-100점):

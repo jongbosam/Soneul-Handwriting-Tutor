@@ -24,7 +24,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onStartPractice, onL
   return (
     <div className="min-h-screen bg-paper p-4 md:p-6 flex flex-col items-center overflow-y-auto safe-area-pb">
       <header className="w-full max-w-4xl flex justify-between items-center mb-6">
-        <h2 className="text-xl md:text-2xl font-bold text-gray-600">안녕, {user.name}!</h2>
+        <h2 className="text-2xl text-gray-600">안녕, {user.name}!</h2>
         <Button variant="ghost" size="sm" onClick={onLogout}>로그아웃</Button>
       </header>
 
@@ -45,7 +45,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onStartPractice, onL
               {currentLevelData.icon}
             </span>
           </div>
-          <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-primary to-orange-400 text-white px-4 py-1.5 md:px-6 md:py-2 rounded-2xl font-black shadow-lg border-2 border-white whitespace-nowrap z-20 flex items-center gap-2 text-sm md:text-base">
+          <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-primary to-orange-400 text-white px-4 py-2 md:px-6 rounded-2xl shadow-lg border-2 border-white whitespace-nowrap z-20 flex items-center gap-2 text-base md:text-lg">
             <span>Lv.{user.level}</span>
             <span>{user.levelName}</span>
           </div>
@@ -53,12 +53,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onStartPractice, onL
 
         <div className="flex-grow w-full z-10 text-center md:text-left">
           <div className="flex justify-between items-end mb-3">
-            <span className="text-xl md:text-2xl font-bold text-gray-700 flex items-center gap-2 justify-center md:justify-start">
+            <span className="text-xl md:text-2xl text-gray-700 flex items-center gap-2 justify-center md:justify-start">
               <Trophy className="text-yellow-500 fill-yellow-500" size={24} /> 
               나의 성장
             </span>
-            <span className="text-gray-500 font-bold bg-gray-100 px-3 py-1 rounded-lg text-sm md:text-base hidden sm:inline">
-                {user.xp} <span className="text-gray-400 text-xs md:text-sm">/ {user.maxXp} XP</span>
+            <span className="text-gray-500 bg-gray-100 px-3 py-1 rounded-lg text-base md:text-lg hidden sm:inline">
+                {user.xp} <span className="text-gray-400 text-sm">/ {user.maxXp} XP</span>
             </span>
           </div>
           <div className="relative h-6 md:h-8 w-full bg-gray-100 rounded-full overflow-hidden border-2 border-gray-200 shadow-inner">
@@ -69,14 +69,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onStartPractice, onL
                 <div className="absolute inset-0 bg-white/30 w-full -translate-x-full animate-[shimmer_2s_infinite]"></div>
             </div>
           </div>
-          <div className="mt-4 flex items-center justify-between text-gray-500 font-medium text-sm md:text-base">
+          <div className="mt-4 flex items-center justify-between text-gray-500 text-base md:text-lg">
              <span>{currentLevelData.name}</span>
              {nextLevelData ? (
-                 <span className="text-primary font-bold flex items-center gap-1">
-                    다음: {nextLevelData.name} <Sparkles size={16} />
+                 <span className="text-primary flex items-center gap-1">
+                    다음: {nextLevelData.name} <Sparkles size={18} />
                  </span>
              ) : (
-                 <span className="text-purple-500 font-bold">최고 레벨! 👑</span>
+                 <span className="text-purple-500">최고 레벨! 👑</span>
              )}
           </div>
         </div>
@@ -98,11 +98,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onStartPractice, onL
         {/* Recent History Card */}
         <div className="lg:col-span-2 bg-white rounded-[32px] p-6 shadow-xl border-4 border-white ring-4 ring-gray-50">
           <div className="flex items-center justify-between mb-4">
-             <h3 className="text-xl font-bold text-gray-700 flex items-center gap-2">
+             <h3 className="text-xl text-gray-700 flex items-center gap-2">
                 <TrendingUp className="text-blue-500" size={24} />
                 최근 나의 기록
              </h3>
-             <span className="text-xs text-gray-400 font-bold uppercase tracking-tighter">Last 5 words</span>
+             <span className="text-sm text-gray-400">최근 5개 단어</span>
           </div>
 
           <div className="space-y-3">
@@ -110,21 +110,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onStartPractice, onL
               user.history.slice(0, 5).map((record) => (
                 <div key={record.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-2xl border border-gray-100 transition-hover hover:bg-white hover:shadow-md">
                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${record.score >= 80 ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg ${record.score >= 80 ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
                         {record.score}
                       </div>
                       <div>
-                        <div className="font-black text-gray-800 text-lg">{record.word}</div>
-                        <div className="text-xs text-gray-400 flex items-center gap-1">
-                           <Calendar size={12} /> {formatDate(record.date)}
+                        <div className="text-gray-800 text-xl">{record.word}</div>
+                        <div className="text-sm text-gray-400 flex items-center gap-1">
+                           <Calendar size={14} /> {formatDate(record.date)}
                         </div>
                       </div>
                    </div>
                    <div className="text-right">
-                      <div className="text-accent font-black text-sm">+{record.xpEarned} XP</div>
+                      <div className="text-accent text-base">+{record.xpEarned} XP</div>
                       <div className="flex gap-0.5">
                         {[...Array(3)].map((_, i) => (
-                          <Star key={i} size={10} className={`${i < (record.score / 33) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`} />
+                          <Star key={i} size={12} className={`${i < (record.score / 33) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`} />
                         ))}
                       </div>
                    </div>
@@ -132,7 +132,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onStartPractice, onL
               ))
             ) : (
               <div className="h-32 flex flex-col items-center justify-center text-gray-300 border-2 border-dashed border-gray-100 rounded-2xl">
-                 <p className="font-bold">아직 기록이 없어요.</p>
+                 <p className="text-lg">아직 기록이 없어요.</p>
                  <p className="text-sm">첫 번째 글씨를 써볼까요?</p>
               </div>
             )}

@@ -1,5 +1,6 @@
 
 import { FeedbackResult } from '../types';
+import { GoogleGenAI, Type } from "@google/genai";
 
 const optimizeCanvas = (sourceCanvas: HTMLCanvasElement): string => {
   const ctx = sourceCanvas.getContext('2d');
@@ -66,7 +67,7 @@ const getFallbackResult = (word: string): Promise<FeedbackResult> => {
     setTimeout(() => {
       resolve({
         score: 85,
-        message: `정말 훌륭해요! '${word}'를 정성스럽게 썼네요!`,
+        message: `정말 훌륭한 문장이네요! '${word}'를 정성스럽게 썼어요!`,
         earnedXp: 15,
         metrics: {
           composition: 80,
@@ -80,46 +81,42 @@ const getFallbackResult = (word: string): Promise<FeedbackResult> => {
 };
 
 export const analyzeHandwriting = async (word: string, canvas: HTMLCanvasElement): Promise<FeedbackResult> => {
-  const apiKey = process.env.API_KEY;
-
-  if (!apiKey) {
+  if (!process.env.API_KEY) {
     return getFallbackResult(word);
   }
 
   try {
-    const { GoogleGenAI, Type } = await import("@google/genai");
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const base64Data = optimizeCanvas(canvas);
 
-    // Use 'gemini-3-flash-preview' for robust handwriting analysis and vision support
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: {
         parts: [
           { inlineData: { mimeType: 'image/jpeg', data: base64Data } },
-          { text: `사용자가 쓴 글자: "${word}". K-PANOSE 지표와 기하학적 균형을 바탕으로 상세 분석을 진행해주세요.` }
+          { text: `사용자가 쓴 문장: "${word}". 전체적인 글씨의 균형과 해당 문장의 맞춤법/띄어쓰기가 잘 지켜졌는지 분석해주세요.` }
         ]
       },
       config: {
         systemInstruction: `
-          당신은 한글 손글씨 및 서체 분석 전문가이자 초등 교육 전문가입니다. 
-          사용자의 손글씨 이미지를 분석하여 K-PANOSE(Korean Font PANOSE) 지표를 기반으로 피드백을 생성합니다.
+          당신은 한글 맞춤법 및 초등 교육 전문가입니다. 
+          제공된 이미지는 초등학생이 쓴 손글씨 문장입니다. 다음 기준에 따라 분석해주세요.
 
           평가 기준 (0-100점):
-          1. 자소 배치 (Composition): 초/중/종성의 위치가 네모틀 안에서 조화로운가.
-          2. 비례 균형 (Balance): 글자 내 자음과 모음의 크기 비율이 표준에 가까운가.
-          3. 시각적 중심 (Center): 무게중심이 중앙 혹은 약간 하단에 안정적으로 위치하는가.
-          4. 속공간 (Space): 글자 내부의 하얀 여백이 뭉치지 않고 고르게 분포하는가.
+          1. 문장 구성 (Composition): 문장의 글자들이 수평을 이루고 띄어쓰기가 적절한가.
+          2. 비례 균형 (Balance): 각 글자의 자음과 모음 비율이 적절한가.
+          3. 시각적 중심 (Center): 문장 전체가 캔버스의 중심에 안정적으로 위치하는가.
+          4. 속공간 (Space): 글자 사이와 낱자 내부의 여백이 조화로운가.
 
           분석 가이드:
-          - 아이들에게 매우 다정하고 구체적으로 설명해주세요.
-          - "자소 배치" 대신 "글자들의 자리", "시각적 중심" 대신 "글자의 무게중심" 등 쉬운 용어를 섞어서 메시지를 작성하세요.
-          - 전체 점수는 4가지 지표의 가중 평균으로 계산합니다.
+          - 아이들에게 매우 긍정적이고 다정하게 말해주세요.
+          - 특히 제시된 문장("${word}")에서 헷갈리기 쉬운 맞춤법 포인트를 잘 썼는지 칭찬해주세요.
+          - 70점 미만이라도 실망하지 않게 격려 위주의 메시지를 작성하세요.
 
           응답 형식 (Strict JSON):
           {
             "score": 전체 점수 (Integer),
-            "message": "아이를 격려하는 다정하고 구체적인 한글 메시지 (K-PANOSE 지표 중 하나를 언급)",
+            "message": "아이를 격려하는 다정하고 구체적인 한글 피드백",
             "metrics": {
               "composition": 점수,
               "balance": 점수,
@@ -155,9 +152,9 @@ export const analyzeHandwriting = async (word: string, canvas: HTMLCanvasElement
 
     return {
       score,
-      message: result.message || "참 잘했어요!",
-      earnedXp: score >= 90 ? 25 : score >= 75 ? 15 : score >= 50 ? 5 : 0,
-      metrics: result.metrics
+      message: result.message || "정말 멋진 문장이에요!",
+      earnedXp: score >= 90 ? 30 : score >= 70 ? 20 : score >= 40 ? 10 : 5,
+      metrics: result.metrics || { composition: 0, balance: 0, center: 0, space: 0 }
     };
 
   } catch (error) {

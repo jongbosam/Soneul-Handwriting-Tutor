@@ -43,7 +43,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="relative">
             <label htmlFor="schoolId" className="block text-base text-gray-500 mb-3 ml-2">
-              나의 비밀 코드 입력
+              나의 별명 입력
             </label>
             <input
               id="schoolId"

@@ -35,7 +35,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   }
 
   // Calculate max count to scale bars properly (highest bar fills the height)
-  const maxCount = stats ? Math.max(...Object.values(stats.levelDistribution), 1) : 1;
+  // Fix: Argument of type 'unknown' is not assignable to parameter of type 'number' by casting to number[]
+  const maxCount = stats ? Math.max(...(Object.values(stats.levelDistribution) as number[]), 1) : 1;
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8 flex flex-col items-center overflow-y-auto">

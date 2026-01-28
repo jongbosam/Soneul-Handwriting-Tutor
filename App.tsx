@@ -15,7 +15,6 @@ import { saveUserData, loadUserData } from './services/firebaseService';
 const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>(AppScreen.LOGIN);
   
-  // State for user data
   const [user, setUser] = useState<UserState>({
     id: '',
     name: '학생',
@@ -27,7 +26,6 @@ const App: React.FC = () => {
     history: []
   });
 
-  // Load basic session from localStorage just for ID persistence
   useEffect(() => {
     const savedId = localStorage.getItem('soneul_last_id');
     if (savedId) {
@@ -45,7 +43,6 @@ const App: React.FC = () => {
       return;
     }
 
-    // Try to load student data from Firestore
     const firebaseData = await loadUserData(schoolId);
     if (firebaseData) {
       setUser(firebaseData);
@@ -69,22 +66,22 @@ const App: React.FC = () => {
     setCurrentScreen(AppScreen.LOGIN);
   };
 
-  // State for practice session
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackResult | null>(null);
-  
-  // State for Level Up Event
   const [levelUpData, setLevelUpData] = useState<LevelData | null>(null);
 
   const handleStartPractice = () => {
-    setCurrentWordIndex(Math.floor(Math.random() * PRACTICE_WORDS.length));
+    // 30개 단어 중 무작위 선택
+    const randomIndex = Math.floor(Math.random() * PRACTICE_WORDS.length);
+    setCurrentWordIndex(randomIndex);
     setCurrentScreen(AppScreen.PRACTICE);
   };
 
   const handlePracticeSubmit = async (canvas: HTMLCanvasElement) => {
     setIsAnalyzing(true);
-    const result = await analyzeHandwriting(PRACTICE_WORDS[currentWordIndex].text, canvas);
+    // targetWord인 단어만 분석에 전달
+    const result = await analyzeHandwriting(PRACTICE_WORDS[currentWordIndex].target, canvas);
     setFeedback(result);
     setIsAnalyzing(false);
   };
@@ -100,7 +97,7 @@ const App: React.FC = () => {
           
           const newRecord: PracticeRecord = {
             id: Date.now().toString(),
-            word: PRACTICE_WORDS[currentWordIndex].text,
+            word: PRACTICE_WORDS[currentWordIndex].target,
             score: feedback.score,
             date: new Date().toISOString(),
             xpEarned: feedback.earnedXp
@@ -134,11 +131,8 @@ const App: React.FC = () => {
           return newState;
         });
       });
-
-      // Save updated state to Firestore asynchronously
       saveUserData(updatedUser);
     }
-    
     setFeedback(null);
     if (!levelUpData) {
         setCurrentScreen(AppScreen.DASHBOARD);
@@ -172,7 +166,9 @@ const App: React.FC = () => {
 
       {currentScreen === AppScreen.PRACTICE && (
         <PracticeCanvas 
-          word={PRACTICE_WORDS[currentWordIndex].text}
+          sentence={PRACTICE_WORDS[currentWordIndex].sentence}
+          target={PRACTICE_WORDS[currentWordIndex].target}
+          hint={PRACTICE_WORDS[currentWordIndex].hint}
           onBack={() => setCurrentScreen(AppScreen.DASHBOARD)}
           onSubmit={handlePracticeSubmit}
           isSubmitting={isAnalyzing}
